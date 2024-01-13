@@ -13,5 +13,5 @@ dependencies = ["typing_extensions",]
 
 [project.optional-dependencies]
 tests = [
-  'pytest'
+  'pytest', "pyyaml", "lark"
 ]

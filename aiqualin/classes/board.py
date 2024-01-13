@@ -77,10 +77,33 @@ class Board:
 
     def visualize(self) -> None:
         rows = []
-        for row in self.tiles:
+        for i, row in enumerate(self.tiles):
             tiles_to_print = []
-            for tile in row:
-                short_string = tile.short_string()
+            for j, tile in enumerate(row):
+                if (
+                    self.last_action is not None
+                    and i == self.last_action.move_start_row
+                    and j == self.last_action.move_start_col
+                ):
+                    if tile != EMPTY_TILE:
+                        short_string = (
+                            tile.short_string().replace("(", "[").replace(")", "]")
+                        )
+                    else:
+                        short_string = "LLAST"
+                elif (
+                    self.last_action is not None
+                    and i == self.last_action.move_end_row
+                    and j == self.last_action.move_end_col
+                ):
+                    if tile != EMPTY_TILE:
+                        short_string = (
+                            tile.short_string().replace("(", "{").replace(")", "}")
+                        )
+                    else:
+                        short_string = "LASTT"
+                else:
+                    short_string = tile.short_string()
 
                 tiles_to_print.append(short_string)
 
@@ -93,11 +116,21 @@ class Board:
     def from_pretty_string(cls, pretty_string: str, last_action: Action | None) -> Self:
         rows = pretty_string.splitlines()
         tiles = []
+
+        # last_action_start_row: int | None = None
+        # last_action_start_col: int | None = None
+        # last_action_end_row: int | None = None
+        # last_action_end_col: int | None = None
+        # last_action_placement_row: int | None = None
+
         for row in rows:
             tiles.append([])
             row = row.strip()
             for tile_string in row.split(" "):
-                tile = Tile.from_short_string(tile_string)
+                if tile_string == "LLAST":
+                    tile = Tile(animal=Animal.EMPTY, color=Color.EMPTY)
+                else:
+                    tile = Tile.from_short_string(tile_string)
                 tiles[-1].append(tile)
 
         return Board(tiles=tiles, last_action=last_action)

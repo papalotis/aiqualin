@@ -79,6 +79,13 @@ def test_move_with_one_tile_placed():
 
     ag = ActionGenerator(board=board, open_tiles=open_tiles, closed_tiles=closed_tiles)
 
+    actions_with_move_to_the_right = ag.generate_actions_for_position_in_direction(
+        x=2, y=2, dx=1, dy=0
+    )
+    assert (
+        len(actions_with_move_to_the_right) == 35 * 6
+    )  # 35 empty positions, 6 tiles to place
+
     actions = ag.generate_actions()
 
     assert (
@@ -179,8 +186,10 @@ def test_move_with_two_tiles_placed_2():
             placement_tile=tile_already_placed[1],
         )
     )
-
+    print()
     board.visualize()
+    print()
+    print()
 
     open_tiles = [
         Tile(animal=Animal.JELLYFISH, color=Color.RED),
@@ -196,6 +205,46 @@ def test_move_with_two_tiles_placed_2():
     )
 
     ag = ActionGenerator(board=board, open_tiles=open_tiles, closed_tiles=closed_tiles)
+
+    new_piece_down_actions = ag.generate_actions_for_position_in_direction(
+        y=2, x=2, dy=1, dx=0
+    )
+    assert len(new_piece_down_actions) == 34 * 6
+
+    new_piece_up_actions = ag.generate_actions_for_position_in_direction(
+        y=2, x=2, dy=-1, dx=0
+    )
+    assert len(new_piece_up_actions) == 34 * 6
+
+    new_piece_left_actions = ag.generate_actions_for_position_in_direction(
+        y=2, x=2, dy=0, dx=-1
+    )
+    assert len(new_piece_left_actions) == 34 * 6
+
+    new_piece_right_actions = ag.generate_actions_for_position_in_direction(
+        y=2, x=2, dy=0, dx=1
+    )
+    assert len(new_piece_right_actions) == 0
+
+    old_piece_down_actions = ag.generate_actions_for_position_in_direction(
+        y=2, x=3, dy=1, dx=0
+    )
+    assert len(old_piece_down_actions) == 34 * 6
+
+    old_piece_up_actions = ag.generate_actions_for_position_in_direction(
+        y=2, x=3, dy=-1, dx=0
+    )
+    assert len(old_piece_up_actions) == 34 * 6
+
+    old_piece_left_actions = ag.generate_actions_for_position_in_direction(
+        y=2, x=3, dy=0, dx=-1
+    )
+    assert len(old_piece_left_actions) == 0
+
+    old_piece_right_actions = ag.generate_actions_for_position_in_direction(
+        y=2, x=3, dy=0, dx=1
+    )
+    assert len(old_piece_right_actions) == 34 * 6
 
     actions = ag.generate_actions()
 
@@ -302,14 +351,24 @@ EMPTY EMPTY EMPTY (5,5) EMPTY EMPTY"""
         - set(chain.from_iterable(board.tiles))
     )
 
+    actions_up = ActionGenerator(
+        board=board, open_tiles=open_tiles, closed_tiles=closed_tiles
+    ).generate_actions_for_position_in_direction(x=4, y=2, dx=0, dy=-1)
+    assert len(actions_up) == 0
+
+    actions_down = ActionGenerator(
+        board=board, open_tiles=open_tiles, closed_tiles=closed_tiles
+    ).generate_actions_for_position_in_direction(x=4, y=2, dx=0, dy=1)
+    assert len(actions_down) == 6 * 34
+
     actions = ActionGenerator(
         board=board, open_tiles=open_tiles, closed_tiles=closed_tiles
     ).generate_actions()
 
     assert (
         sum(
-            action.move_end_col != last_action.move_start_col
-            or action.move_end_row != last_action.move_start_row
+            action.move_end_col == last_action.move_start_col
+            and action.move_end_row == last_action.move_start_row
             for action in actions
             if action.placement_tile == open_tiles[0]
         )
@@ -317,4 +376,3 @@ EMPTY EMPTY EMPTY (5,5) EMPTY EMPTY"""
     )
 
 
-# test_specific_board()
