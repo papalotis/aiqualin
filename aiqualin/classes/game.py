@@ -1,11 +1,14 @@
+import random
 from dataclasses import dataclass, field
-from typing import Any
 
 from aiqualin.classes.action import Action
-from aiqualin.classes.action_generator import ActionGenerator
 from aiqualin.classes.animal import Animal
 from aiqualin.classes.board import Board
+from aiqualin.classes.cli_player import CLIPlayer
 from aiqualin.classes.color import Color
+from aiqualin.classes.game_scorer import GameScorer
+from aiqualin.classes.player import AbstractPlayer
+from aiqualin.classes.simple_score_based_ai import SimpleScoreBasedAI
 from aiqualin.classes.tile import Tile
 
 
@@ -31,9 +34,27 @@ class Game:
     board: Board = field(default_factory=Board.empty_board)
     open_tiles: list[Tile] = field(default_factory=list)
     closed_tiles: list[Tile] = field(default_factory=create_full_closed_tiles)
+    players: tuple[AbstractPlayer, AbstractPlayer] = field(
+        default_factory=lambda: (SimpleScoreBasedAI(Color), SimpleScoreBasedAI(Animal))
+    )
+    player_names: tuple[str, str] = field(init=False)
 
     def __post_init__(self) -> None:
+        self.shuffle_closed_tiles()
+
         self.replenish_open_tiles()
+
+        player_names = tuple(player.__class__.__name__ for player in self.players)
+        if player_names[0] == player_names[1]:
+            player_names = tuple(
+                f"{player_name}_{i}"
+                for i, player_name in enumerate(player_names, start=1)
+            )
+
+        self.player_names = player_names
+
+    def shuffle_closed_tiles(self) -> None:
+        random.shuffle(self.closed_tiles)
 
     def replenish_open_tiles(self) -> None:
         while len(self.open_tiles) < N_OPEN_TILES and len(self.closed_tiles) > 0:
@@ -47,36 +68,35 @@ class Game:
 
         self.replenish_open_tiles()
 
-    def play_cli(self) -> None:
-        while True:
-            print(len(self.open_tiles))
-            print(len(self.closed_tiles))
+    def play(self) -> None:
+        while len(self.open_tiles) > 0:
+            for i, player in enumerate(self.players):
+                player_name = self.player_names[i]
+                print(f"{player_name}'s turn:")
 
-            self.board.visualize()
-
-            actions = list(
-                ActionGenerator(
+                action = player.next_action(
                     self.board, self.open_tiles, self.closed_tiles
-                ).generate_actions()
-            )
+                )
+                print("Action:", action)
+                self.play_action(action)
+                print()
+                self.board.visualize()
+                print()
 
-            new_boards = [self.board.apply_action(action) for action in actions]
+        score_animals = GameScorer(self.board).score_for_property(Animal)
+        score_colors = GameScorer(self.board).score_for_property(Color)
 
-            # print("Possible actions:")
-            # for i, action in enumerate(actions):
-            #     print(f"{i}: {action}")
+        print("Final score:")
+        print(f"  Animals: {score_animals}")
+        print(f"  Colors: {score_colors}")
 
-            action_str = input("Enter action index: ")
-            if action_str == "q":
-                break
-
-            action_index = int(action_str)
-
-            action = list(actions)[action_index]
-
-            self.play_action(action)
-            print()
+        if score_animals > score_colors:
+            print("Animals win!")
+        elif score_animals < score_colors:
+            print("Colors win!")
+        else:
+            print("Tie!")
 
 
 if __name__ == "__main__":
-    Game().play_cli()
+    Game().play()

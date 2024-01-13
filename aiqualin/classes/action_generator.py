@@ -15,39 +15,41 @@ class ActionGenerator:
     def all_positions(self) -> set[tuple[int, int]]:
         return_value = set()
 
-        for i in range(len(self.board.tiles)):
-            for j in range(len(self.board.tiles[i])):
-                return_value.add((i, j))
+        for row_index in range(len(self.board.tiles)):
+            for col_index in range(len(self.board.tiles[row_index])):
+                return_value.add((row_index, col_index))
 
         return return_value
 
     def positions_of_empty_tiles(self) -> Iterable[tuple[int, int]]:
-        for i, row in enumerate(self.board.tiles):
-            for j, tile in enumerate(row):
+        for row_index, row in enumerate(self.board.tiles):
+            for col_index, tile in enumerate(row):
                 if tile == EMPTY_TILE:
-                    yield i, j
+                    yield row_index, col_index
 
     def positions_of_non_empty_tiles(self) -> Iterable[tuple[int, int]]:
-        for i, row in enumerate(self.board.tiles):
-            for j, tile in enumerate(row):
+        for row_index, row in enumerate(self.board.tiles):
+            for col_index, tile in enumerate(row):
                 if tile != EMPTY_TILE:
-                    yield i, j
+                    yield row_index, col_index
 
     def generate_actions_for_position_in_direction(
-        self, x: int, y: int, dx: int, dy: int
+        self, col: int, row: int, d_col: int, d_row: int
     ) -> set[Action]:
         actions: set[Action] = set()
 
+        assert (d_col, d_row) in [(1, 0), (-1, 0), (0, 1), (0, -1)], (d_col, d_row)
+
         empty_positions = set(self.positions_of_empty_tiles())
 
-        if (y, x) in empty_positions:
+        if (row, col) in empty_positions:
             # trying to find out what happens if we move an empty tile
             # this is not allowed
             return actions
 
         for new_tile in self.open_tiles:
-            move_tile_x = x
-            move_tile_y = y
+            move_tile_col = col
+            move_tile_row = row
             # this is the special version I play with Frau Kaya(r)
             # where tiles can move only one step and moving is mandatory
             # set to inf to play the original game
@@ -55,39 +57,40 @@ class ActionGenerator:
             i = 0
             while i < n_iterations_allowed:
                 i += 1
-                move_tile_x += dx
-                move_tile_y += dy
+                move_tile_col += d_col
+                move_tile_row += d_row
 
                 if self.board.last_action is not None:
                     if (
-                        move_tile_x == self.board.last_action.move_start_col
-                        and move_tile_y == self.board.last_action.move_start_row
+                        move_tile_col == self.board.last_action.move_start_col
+                        and move_tile_row == self.board.last_action.move_start_row
+                        and col == self.board.last_action.move_end_col
+                        and row == self.board.last_action.move_end_row
                     ):
-                        print("skipping position where ")
                         # we would be undoing the move part of the
                         # last move, so we are not allowed to do this
                         continue
 
-                if move_tile_x not in range(len(self.board.tiles)):
+                if move_tile_col not in range(len(self.board.tiles)):
                     break
 
-                if move_tile_y not in range(len(self.board.tiles[move_tile_x])):
+                if move_tile_row not in range(len(self.board.tiles[move_tile_col])):
                     break
 
-                tile_at_move_position = self.board.tiles[move_tile_y][move_tile_x]
+                tile_at_move_position = self.board.tiles[move_tile_row][move_tile_col]
                 if tile_at_move_position != EMPTY_TILE:
                     # we found a blocking tile
                     break
 
-                empty_tiles_for_move = (empty_positions - {(y, x)}) | {
-                    (move_tile_y, move_tile_x)
-                }
-                for empty_tile_x, empty_tile_y in empty_tiles_for_move:
+                empty_tiles_for_move = (
+                    empty_positions - {(move_tile_row, move_tile_col)}
+                ) | {(row, col)}
+                for empty_tile_y, empty_tile_x in empty_tiles_for_move:
                     new_action = Action(
-                        move_start_row=y,
-                        move_start_col=x,
-                        move_end_row=move_tile_y,
-                        move_end_col=move_tile_x,
+                        move_start_row=row,
+                        move_start_col=col,
+                        move_end_row=move_tile_row,
+                        move_end_col=move_tile_col,
                         placement_row=empty_tile_y,
                         placement_col=empty_tile_x,
                         placement_tile=new_tile,
@@ -96,11 +99,11 @@ class ActionGenerator:
 
         return actions
 
-    def generate_actions_for_position(self, x: int, y: int) -> set[Action]:
+    def generate_actions_for_position(self, col: int, row: int) -> set[Action]:
         actions: set[Action] = set()
         for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
             new_actions = self.generate_actions_for_position_in_direction(
-                x=x, y=y, dx=dx, dy=dy
+                col=col, row=row, d_col=dx, d_row=dy
             )
             actions |= new_actions
 
@@ -108,15 +111,15 @@ class ActionGenerator:
 
     def generate_start_actions(self) -> set[Action]:
         actions: set[Action] = set()
-        for x, y in self.positions_of_empty_tiles():
+        for row, col in self.positions_of_empty_tiles():
             for tile in self.open_tiles:
                 new_move = Action(
                     move_start_row=-1,
                     move_start_col=-1,
                     move_end_row=-1,
                     move_end_col=-1,
-                    placement_row=y,
-                    placement_col=x,
+                    placement_row=row,
+                    placement_col=col,
                     placement_tile=tile,
                 )
                 actions.add(new_move)
@@ -128,7 +131,7 @@ class ActionGenerator:
             return self.generate_start_actions()
 
         moves: set[Action] = set()
-        for y, x in self.positions_of_non_empty_tiles():
-            moves |= self.generate_actions_for_position(x=x, y=y)
+        for row, col in self.positions_of_non_empty_tiles():
+            moves |= self.generate_actions_for_position(col=col, row=row)
 
         return moves

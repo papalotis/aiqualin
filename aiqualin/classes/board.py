@@ -35,18 +35,19 @@ class Board:
 
         tiles = copy.deepcopy(self.tiles)
 
-        no_move_in_action = (
-            action.move_start_col == -1
-            and action.move_start_row == -1
-            and action.move_end_col == -1
-            and action.move_end_row == -1
+        move_coordinates = (
+            action.move_start_row,
+            action.move_start_col,
+            action.move_end_row,
+            action.move_end_col,
         )
 
-        if no_move_in_action:
+        if all(coordinate == -1 for coordinate in move_coordinates):
             n_non_empty_tiles = sum(tile != EMPTY_TILE for row in tiles for tile in row)
             assert n_non_empty_tiles == 0
-
-        if not no_move_in_action:
+        elif -1 in move_coordinates:
+            raise ValueError("cannot have partial move")
+        else:
             # make sure that the tile at the start is not empty
             tile_at_start = tiles[action.move_start_row][action.move_start_col]
             assert tile_at_start != EMPTY_TILE, "cannot move from empty tile"
@@ -57,9 +58,19 @@ class Board:
             tiles[action.move_end_row][action.move_end_col] = tile_at_start
 
         # place tile
-        tile_at_placement = tiles[action.placement_row][action.placement_col]
-        assert tile_at_placement == EMPTY_TILE, "cannot place tile on non-empty tile"
-        tiles[action.placement_row][action.placement_col] = action.placement_tile
+        try:
+            tile_at_placement = tiles[action.placement_row][action.placement_col]
+            assert (
+                tile_at_placement == EMPTY_TILE
+            ), "cannot place tile on non-empty tile"
+            tiles[action.placement_row][action.placement_col] = action.placement_tile
+        except AssertionError:
+            print()
+            self.visualize()
+            print()
+            print(action)
+            print()
+            raise
 
         return Board(tiles=tiles, last_action=action)
 
@@ -116,12 +127,6 @@ class Board:
     def from_pretty_string(cls, pretty_string: str, last_action: Action | None) -> Self:
         rows = pretty_string.splitlines()
         tiles = []
-
-        # last_action_start_row: int | None = None
-        # last_action_start_col: int | None = None
-        # last_action_end_row: int | None = None
-        # last_action_end_col: int | None = None
-        # last_action_placement_row: int | None = None
 
         for row in rows:
             tiles.append([])
