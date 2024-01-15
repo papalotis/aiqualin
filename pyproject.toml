@@ -9,7 +9,7 @@ readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
-dependencies = ["typing_extensions",]
+dependencies = ["typing_extensions","rich"]
 
 [project.optional-dependencies]
 tests = [

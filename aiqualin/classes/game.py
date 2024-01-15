@@ -1,5 +1,6 @@
 import random
 from dataclasses import dataclass, field
+from rich import print
 
 from aiqualin.classes.action import Action
 from aiqualin.classes.animal import Animal
@@ -58,7 +59,22 @@ class Game:
 
     def replenish_open_tiles(self) -> None:
         while len(self.open_tiles) < N_OPEN_TILES and len(self.closed_tiles) > 0:
-            self.open_tiles.append(self.closed_tiles.pop())
+            try:
+                new_tile = self.get_new_tile()
+            except Exception:
+                print('\n[red]Error:[/red] Invalid input, try again!')
+                
+                continue
+            try:
+                index_in_closed_tiles = self.closed_tiles.index(new_tile)
+            except ValueError:
+                # tile is not in closed tiles
+                print('\n[red]Error:[/red] Tile is not in closed tiles, try again!')
+            else:
+                self.open_tiles.append(self.closed_tiles.pop(index_in_closed_tiles))
+
+    def get_new_tile(self) -> Tile:
+        return self.closed_tiles[0]
 
     def play_action(self, action: Action) -> None:
         self.board = self.board.apply_action(action)
