@@ -10,13 +10,24 @@ from aiqualin.classes.player import AbstractPlayer
 from aiqualin.classes.tile import EMPTY_TILE, Tile
 
 
+
 @dataclass
 class ManualGame(Game):
+    """
+    Represents a manual game where the players are prompted to enter their moves through the command line interface.
+    """
+
     players: tuple[AbstractPlayer, AbstractPlayer] = field(
         default_factory=lambda: (CLIPlayer(Color), CLIPlayer(Animal))
     )
 
     def get_new_tile(self) -> Tile:
+        """
+        Prompts the user to enter the animal and color of a new tile and returns the corresponding Tile object.
+
+        Returns:
+            Tile: The new tile with the specified animal and color.
+        """
         print()
         print("What animal is the new tile?")
         for animal in Animal:

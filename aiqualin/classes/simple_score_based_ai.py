@@ -1,9 +1,6 @@
 from aiqualin.classes.action import Action
 from aiqualin.classes.action_generator import ActionGenerator
-from aiqualin.classes.animal import Animal
 from aiqualin.classes.board import Board
-from aiqualin.classes.color import Color
-from aiqualin.classes.game_scorer import GameScorer
 from aiqualin.classes.player import AbstractPlayer
 from aiqualin.classes.tile import Tile
 

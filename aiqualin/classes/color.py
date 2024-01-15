@@ -2,6 +2,9 @@ from aiqualin.classes.indexable_enum import IndexableEnum
 
 
 class Color(str, IndexableEnum):
+    """
+    Represents different types of colors in the game Aqualin.
+    """
     BLUE = "blue"
     GREEN = "green"
     PINK = "pink"

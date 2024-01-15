@@ -4,14 +4,12 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "aiqualin"
-authors = [{name = "Panagiotis Karagiannis", email = "papalotis1@gmail.com"}]
+authors = [{ name = "Panagiotis Karagiannis", email = "papalotis1@gmail.com" }]
 readme = "README.md"
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
-dependencies = ["typing_extensions","rich"]
+dependencies = ["typing_extensions", "rich"]
 
 [project.optional-dependencies]
-tests = [
-  'pytest', "pyyaml", "lark"
-]
+tests = ['pytest', "pyyaml", "lark", "pytest-cov"]
