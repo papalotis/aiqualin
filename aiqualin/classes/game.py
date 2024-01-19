@@ -60,6 +60,8 @@ class Game:
 
     def replenish_open_tiles(self) -> None:
         while len(self.open_tiles) < N_OPEN_TILES and len(self.closed_tiles) > 0:
+            n_need_to_replenish = N_OPEN_TILES - len(self.open_tiles)
+            print(f"Need to replenish {n_need_to_replenish} more tiles.")
             try:
                 new_tile = self.get_new_tile()
             except Exception:

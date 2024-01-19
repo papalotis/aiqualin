@@ -23,6 +23,34 @@ class ManualGame(Game):
         )
     )
 
+    def play(self) -> None:
+        while True:
+            print("Who is starting? Color or Animal?")
+            to_start = input('Enter "color" or "animal": ').strip().title()
+
+            if to_start in ("Color", "Animal"):
+                break
+            else:
+                print("Invalid input, please try again.")
+
+        if (to_start == "Color" and self.players[0]._side == Animal) or (
+            to_start == "Animal" and self.players[0]._side == Color
+        ):
+            self.players = (self.players[1], self.players[0])
+
+        return super().play()
+
+    def interpret_color_animal(
+        self, color_or_animal: str, animal_or_color: str
+    ) -> tuple[Color, Animal]:
+        try:
+            color_or_animal = Color(color_or_animal)
+        except ValueError:
+            color_or_animal, animal_or_color = animal_or_color, color_or_animal
+            color_or_animal = Color(color_or_animal)
+        animal_or_color = Animal(animal_or_color)
+        return color_or_animal, animal_or_color
+
     def get_new_tile(self) -> Tile:
         """
         Prompts the user to enter the animal and color of a new tile and returns the corresponding Tile object.
@@ -31,27 +59,14 @@ class ManualGame(Game):
             Tile: The new tile with the specified animal and color.
         """
         print()
-        print("What animal is the new tile?")
-        for animal in Animal:
-            if animal == Animal.EMPTY:
-                continue
+        print("Enter the color and animal type of the new tile.")
 
-            print(f"{Animal.to_index(animal)+1}: {animal.name}")
+        color_and_animal = tuple(input('Enter "color animal": ').strip().split())
+        assert len(color_and_animal) == 2, "Invalid input"
 
-        index_animal = int(input("Enter the index of the animal: ")) - 1
+        color, animal = self.interpret_color_animal(*color_and_animal)
 
-        print("What color is the new tile?")
-        for color in Color:
-            if color == Color.EMPTY:
-                continue
-
-            print(f"[{color.name.lower()}]{Color.to_index(color)+1}: {color.name}")
-
-        index_color = int(input("Enter the index of the color: ")) - 1
-
-        tile = Tile(
-            animal=Animal.from_index(index_animal), color=Color.from_index(index_color)
-        )
+        tile = Tile(animal=animal, color=color)
         assert tile != EMPTY_TILE
 
         return tile
