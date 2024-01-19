@@ -19,7 +19,7 @@ class ManualGame(Game):
     players: tuple[AbstractPlayer, AbstractPlayer] = field(
         default_factory=lambda: (
             CLIPlayerWithBestMoveSuggestion(Color),
-            CLIPlayer(Animal),
+            CLIPlayerWithBestMoveSuggestion(Animal),
         )
     )
 
