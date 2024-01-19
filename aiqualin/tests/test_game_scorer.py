@@ -326,40 +326,24 @@ def test_board_from_manual() -> None:
         ],
     ]
 
-    board = Board(tiles=tiles, last_action=None)
+    board = Board(tiles=tiles)
 
     gs = GameScorer(board=board)
 
-    d = gs.n_lengths_horizontal(property_to_score=Animal)
-    del d[1]
-    assert d == {2: 4, 3: 0, 4: 0, 5: 0, 6: 0}
-
-    d = gs.n_lengths_vertical(property_to_score=Animal)
-    del d[1]
-    assert d == {2: 3, 3: 1, 4: 1, 5: 0, 6: 0}
-
-    d = gs.n_lengths_horizontal(property_to_score=Color)
-    del d[1]
-    assert d == {2: 4, 3: 2, 4: 0, 5: 0, 6: 0}
-
-    d = gs.n_lengths_vertical(property_to_score=Color)
-    del d[1]
-    assert d == {2: 3, 3: 1, 4: 0, 5: 0, 6: 0}
-
-    assert gs.score_for_property(Animal) == 16
-    assert gs.score_for_property(Color) == 16
-    assert gs.score == 0
+    assert gs.score_for_property(Animal) == 21
+    assert gs.score_for_property(Color) == 19
+    assert gs.score == 2
 
     # transpose the board
     # score should be the same
     tiles_transposed = list(zip(*tiles))
-    board = Board(tiles=tiles_transposed, last_action=None)
+    board = Board(tiles=tiles_transposed)
 
     gs = GameScorer(board=board)
 
-    assert gs.score_for_property(Animal) == 16
-    assert gs.score_for_property(Color) == 16
-    assert gs.score == 0
+    assert gs.score_for_property(Animal) == 21
+    assert gs.score_for_property(Color) == 19
+    assert gs.score == 2
 
 
-test_board_from_manual()
+# test_board_from_manual()

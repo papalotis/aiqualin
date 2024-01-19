@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import networkx as nx
+
 from aiqualin.classes.animal import Animal
 from aiqualin.classes.board import Board
 from aiqualin.classes.color import Color
@@ -8,10 +10,6 @@ from aiqualin.classes.tile import EMPTY_TILE, Tile
 
 @dataclass
 class GameScorer:
-    """
-    This is the scoring method that I use with Frau Kaya(r). In the real game, Ls are considered contiguous, but when we play we only consider horizontal or vertical groupings.
-    """
-
     board: Board
 
     def get_property_from_tile(
@@ -24,76 +22,44 @@ class GameScorer:
 
         raise ValueError("property_to_score must be Animal or Color")
 
-    def n_lengths_for_sequence(
-        self, sequence: list[Tile], property_to_score: type[Animal | Color]
-    ) -> dict[int, int]:
-        lengths_appearances = {i: 0 for i in range(1, 7)}
+    def create_tile_graph(self, property_to_score: type[Animal | Color]) -> nx.Graph:
+        graph = nx.Graph()
 
-        # find the lengths of consecutive tiles with the same property
-        current_length = 1
-        for i in range(len(sequence)):
-            current_tile = sequence[i]
+        for row_index, row in enumerate(self.board.tiles):
+            for col_index, tile in enumerate(row):
+                if tile == EMPTY_TILE:
+                    continue
 
-            if i == len(sequence) - 1:
-                next_tile = EMPTY_TILE
-            else:
-                next_tile = sequence[i + 1]
+                property_value = self.get_property_from_tile(
+                    tile, property_to_score=property_to_score
+                )
 
-            current_property = self.get_property_from_tile(
-                current_tile, property_to_score
-            )
-            next_property = self.get_property_from_tile(next_tile, property_to_score)
+                # we work in undirected graphs, we only need to look up and left
+                # because we will add the edges in both directions
+                if row_index > 0:
+                    left_neighbor_tile = self.board.tiles[row_index - 1][col_index]
+                    left_neighbor_property_value = self.get_property_from_tile(
+                        left_neighbor_tile, property_to_score=property_to_score
+                    )
 
-            if current_property == next_property and next_tile != EMPTY_TILE:
-                current_length += 1
-            else:
-                lengths_appearances[current_length] += 1
-                current_length = 1
+                    if left_neighbor_property_value == property_value:
+                        graph.add_edge(tile, left_neighbor_tile)
 
-        return lengths_appearances
+                if col_index > 0:
+                    top_neighbor_tile = self.board.tiles[row_index][col_index - 1]
+                    top_neighbor_property_value = self.get_property_from_tile(
+                        top_neighbor_tile, property_to_score=property_to_score
+                    )
 
-    def n_lengths_horizontal(
-        self, property_to_score: type[Animal | Color]
-    ) -> dict[int, int]:
-        lengths_appearances = {i: 0 for i in range(1, 7)}
+                    if top_neighbor_property_value == property_value:
+                        graph.add_edge(tile, top_neighbor_tile)
 
-        for row in self.board.tiles:
-            lengths_appearances_in_row = self.n_lengths_for_sequence(
-                row, property_to_score
-            )
-            for length, appearances in lengths_appearances_in_row.items():
-                lengths_appearances[length] += appearances
-
-        return lengths_appearances
-
-    def n_lengths_vertical(
-        self, property_to_score: type[Animal | Color]
-    ) -> dict[int, int]:
-        lengths_appearances = {i: 0 for i in range(1, 7)}
-
-        for col in range(len(self.board.tiles[0])):
-            column = [row[col] for row in self.board.tiles]
-            lengths_appearances_in_column = self.n_lengths_for_sequence(
-                column, property_to_score
-            )
-            for length, appearances in lengths_appearances_in_column.items():
-                lengths_appearances[length] += appearances
-
-        return lengths_appearances
-
-    def n_lengths(self, property_to_score: type[Animal | Color]) -> dict[int, int]:
-        n_lengths_horizontal = self.n_lengths_horizontal(property_to_score)
-        n_lengths_vertical = self.n_lengths_vertical(property_to_score)
-
-        lengths_appearances = {
-            k: n_lengths_horizontal[k] + n_lengths_vertical[k]
-            for k in n_lengths_horizontal.keys()
-        }
-
-        return lengths_appearances
+        return graph
 
     def score_for_property(self, property_to_score: type[Animal | Color]) -> int:
-        lengths_appearances = self.n_lengths(property_to_score)
+        graph = self.create_tile_graph(property_to_score=property_to_score)
+
+        ccs = nx.connected_components(graph)
 
         length_to_score_map = {
             1: 0,
@@ -104,10 +70,7 @@ class GameScorer:
             6: 15,
         }
 
-        score = sum(
-            length_to_score_map[length] * appearances
-            for length, appearances in lengths_appearances.items()
-        )
+        score = sum(length_to_score_map[len(cc)] for cc in ccs if len(cc) > 1)
 
         return score
 

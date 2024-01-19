@@ -34,7 +34,7 @@ class ActionGenerator:
                     yield row_index, col_index
 
     def generate_actions_for_position_in_direction(
-        self, col: int, row: int, d_col: int, d_row: int
+        self, col: int, row: int, d_col: int, d_row: int, add_no_movement_action: bool
     ) -> set[Action]:
         actions: set[Action] = set()
 
@@ -45,52 +45,68 @@ class ActionGenerator:
         if (row, col) in empty_positions:
             # trying to find out what happens if we move an empty tile
             # this is not allowed
-            return actions
+            raise ValueError("Trying to move an empty tile")
 
-        for new_tile in self.open_tiles:
-            move_tile_col = col
-            move_tile_row = row
-            # this is the special version I play with Frau Kaya(r)
-            # where tiles can move only one step and moving is mandatory
-            # set to inf to play the original game
-            n_iterations_allowed = 1
-            i = 0
-            while i < n_iterations_allowed:
-                i += 1
+        move_tile_col = col
+        move_tile_row = row
+        n_iterations_allowed = 10
+        i = 0
+        while i < n_iterations_allowed:
+            if i > 0:
                 move_tile_col += d_col
                 move_tile_row += d_row
+            i += 1
 
-                if self.board.last_action is not None:
-                    if (
-                        move_tile_col == self.board.last_action.move_start_col
-                        and move_tile_row == self.board.last_action.move_start_row
-                        and col == self.board.last_action.move_end_col
-                        and row == self.board.last_action.move_end_row
-                    ):
-                        # we would be undoing the move part of the
-                        # last move, so we are not allowed to do this
+            # moved out of the board
+            if move_tile_col not in range(len(self.board.tiles)):
+                break
+
+            # moved out of the board
+            if move_tile_row not in range(len(self.board.tiles[move_tile_col])):
+                break
+
+            tile_at_move_position = self.board.tiles[move_tile_row][move_tile_col]
+            if tile_at_move_position != EMPTY_TILE:
+                if (move_tile_row, move_tile_col) == (
+                    row,
+                    col,
+                ):
+                    if add_no_movement_action:
+                        # this is the case where we are not moving a tile
+                        move_kwargs = dict(
+                            move_start_row=-1,
+                            move_start_col=-1,
+                            move_end_row=-1,
+                            move_end_col=-1,
+                        )
+                        # since we do not move the tile, we can place it exactly
+                        # where the empty tiles are currently
+                        empty_tiles_for_placement = set(empty_positions)
+                    else:
                         continue
 
-                if move_tile_col not in range(len(self.board.tiles)):
+                else:
+                    # we found a tile in the way, we can't move further
                     break
-
-                if move_tile_row not in range(len(self.board.tiles[move_tile_col])):
-                    break
-
-                tile_at_move_position = self.board.tiles[move_tile_row][move_tile_col]
-                if tile_at_move_position != EMPTY_TILE:
-                    # we found a blocking tile
-                    break
-
-                empty_tiles_for_move = (
+            else:
+                # we want to both move a tile and place a tile
+                move_kwargs = dict(
+                    move_start_row=row,
+                    move_start_col=col,
+                    move_end_row=move_tile_row,
+                    move_end_col=move_tile_col,
+                )
+                # remove the tile that has currently been moved to
+                # from the potential empty tiles and add the tile that
+                # we are moving from to the empty tiles
+                empty_tiles_for_placement = (
                     empty_positions - {(move_tile_row, move_tile_col)}
                 ) | {(row, col)}
-                for empty_tile_y, empty_tile_x in empty_tiles_for_move:
+
+            for empty_tile_y, empty_tile_x in empty_tiles_for_placement:
+                for new_tile in self.open_tiles:
                     new_action = Action(
-                        move_start_row=row,
-                        move_start_col=col,
-                        move_end_row=move_tile_row,
-                        move_end_col=move_tile_col,
+                        **move_kwargs,
                         placement_row=empty_tile_y,
                         placement_col=empty_tile_x,
                         placement_tile=new_tile,
@@ -101,10 +117,17 @@ class ActionGenerator:
 
     def generate_actions_for_position(self, col: int, row: int) -> set[Action]:
         actions: set[Action] = set()
-        for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+
+        for i, (d_col, d_row) in enumerate([(1, 0), (-1, 0), (0, 1), (0, -1)]):
+            add_no_movement_action = i == 0
             new_actions = self.generate_actions_for_position_in_direction(
-                col=col, row=row, d_col=dx, d_row=dy
+                col=col,
+                row=row,
+                d_col=d_col,
+                d_row=d_row,
+                add_no_movement_action=add_no_movement_action,
             )
+
             actions |= new_actions
 
         return actions
@@ -127,7 +150,7 @@ class ActionGenerator:
         return actions
 
     def generate_actions(self) -> set[Action]:
-        if self.board.last_action is None and self.board.is_empty():
+        if self.board.is_empty():
             return self.generate_start_actions()
 
         moves: set[Action] = set()

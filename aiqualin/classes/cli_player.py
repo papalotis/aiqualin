@@ -62,3 +62,23 @@ class CLIPlayer(AbstractPlayer):
         print()
 
         return action
+
+
+class CLIPlayerWithBestMoveSuggestion(CLIPlayer):
+    def next_action(
+        self, board: Board, open_tiles: list[Tile], closed_tiles: list[Tile]
+    ) -> Action:
+        """
+        Prints the move that would currently give the highest score difference. Then prompts the user to enter their move.
+        """
+        actions = ActionGenerator(board, open_tiles, closed_tiles).generate_actions()
+
+        best_action = max(
+            actions,
+            key=lambda action: self.our_score(board.apply_action(action))
+            - self.their_score(board.apply_action(action)),
+        )
+
+        print("Best move:", best_action)
+
+        return super().next_action(board, open_tiles, closed_tiles)

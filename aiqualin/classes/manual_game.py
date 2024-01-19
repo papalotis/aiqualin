@@ -3,12 +3,11 @@ from dataclasses import dataclass, field
 from rich import print
 
 from aiqualin.classes.animal import Animal
-from aiqualin.classes.cli_player import CLIPlayer
+from aiqualin.classes.cli_player import CLIPlayer, CLIPlayerWithBestMoveSuggestion
 from aiqualin.classes.color import Color
 from aiqualin.classes.game import Game
 from aiqualin.classes.player import AbstractPlayer
 from aiqualin.classes.tile import EMPTY_TILE, Tile
-
 
 
 @dataclass
@@ -18,7 +17,10 @@ class ManualGame(Game):
     """
 
     players: tuple[AbstractPlayer, AbstractPlayer] = field(
-        default_factory=lambda: (CLIPlayer(Color), CLIPlayer(Animal))
+        default_factory=lambda: (
+            CLIPlayerWithBestMoveSuggestion(Color),
+            CLIPlayer(Animal),
+        )
     )
 
     def get_new_tile(self) -> Tile:

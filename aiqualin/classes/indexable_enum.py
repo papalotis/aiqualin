@@ -1,6 +1,7 @@
 from enum import Enum
-from typing_extensions import Self
 from typing import SupportsIndex
+
+from typing_extensions import Self
 
 
 class IndexableEnum(Enum):

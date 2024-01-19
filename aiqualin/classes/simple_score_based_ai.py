@@ -3,6 +3,7 @@ from aiqualin.classes.action_generator import ActionGenerator
 from aiqualin.classes.board import Board
 from aiqualin.classes.player import AbstractPlayer
 from aiqualin.classes.tile import Tile
+from aiqualin.classes.timer import Timer
 
 
 class SimpleScoreBasedAI(AbstractPlayer):
@@ -15,13 +16,20 @@ class SimpleScoreBasedAI(AbstractPlayer):
     def next_action(
         self, board: Board, open_tiles: list[Tile], closed_tiles: list[Tile]
     ) -> Action:
-        next_actions = list(
-            ActionGenerator(board, open_tiles, closed_tiles).generate_actions()
-        )
+        no_print = True
 
-        next_boards = (board.apply_action(action) for action in next_actions)
+        with Timer("generator", no_print=no_print):
+            next_actions = list(
+                ActionGenerator(board, open_tiles, closed_tiles).generate_actions()
+            )
 
-        next_scores = [self.score_board(next_board) for next_board in next_boards]
+        print(f"There are {len(next_actions)} possible actions")
+
+        with Timer("move_application", no_print=no_print):
+            next_boards = [board.apply_action(action) for action in next_actions]
+
+        with Timer("scoring", no_print=no_print):
+            next_scores = [self.score_board(next_board) for next_board in next_boards]
 
         index_best_score = next_scores.index(max(next_scores))
 

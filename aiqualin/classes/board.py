@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass
 
+from rich import print
 from typing_extensions import Self
 
 from aiqualin.classes.action import Action
@@ -14,25 +15,8 @@ from aiqualin.classes.tile import EMPTY_TILE, Tile
 @dataclass(frozen=True)
 class Board:
     tiles: list[list[Tile]]
-    last_action: Action | None
 
     def apply_action(self, action: Action) -> Board:
-        # make sure that the movement of this action
-        # does not undo the movement of the last action
-        if self.last_action is not None:
-            if (
-                action.move_start_row == self.last_action.move_end_row
-                and action.move_start_col == self.last_action.move_end_col
-                and action.move_end_row == self.last_action.move_start_row
-                and action.move_end_col == self.last_action.move_start_col
-            ):
-                self.visualize()
-                print()
-                print(action)
-                print()
-                print(self.last_action)
-                raise ValueError("cannot undo last move")
-
         tiles = copy.deepcopy(self.tiles)
 
         move_coordinates = (
@@ -43,8 +27,8 @@ class Board:
         )
 
         if all(coordinate == -1 for coordinate in move_coordinates):
-            n_non_empty_tiles = sum(tile != EMPTY_TILE for row in tiles for tile in row)
-            assert n_non_empty_tiles == 0
+            # this is an action without movement
+            pass
         elif -1 in move_coordinates:
             raise ValueError("cannot have partial move")
         else:
@@ -72,7 +56,7 @@ class Board:
             print()
             raise
 
-        return Board(tiles=tiles, last_action=action)
+        return Board(tiles=tiles)
 
     @classmethod
     def empty_board(cls) -> Self:
@@ -82,39 +66,16 @@ class Board:
             for _ in range(n_grid)
         ]
 
-        board = cls(tiles=tiles, last_action=None)
+        board = cls(tiles=tiles)
 
         return board
 
     def visualize(self) -> None:
         rows = []
-        for i, row in enumerate(self.tiles):
+        for row in self.tiles:
             tiles_to_print = []
-            for j, tile in enumerate(row):
-                if (
-                    self.last_action is not None
-                    and i == self.last_action.move_start_row
-                    and j == self.last_action.move_start_col
-                ):
-                    if tile != EMPTY_TILE:
-                        short_string = (
-                            tile.short_string().replace("(", "[").replace(")", "]")
-                        )
-                    else:
-                        short_string = "LLAST"
-                elif (
-                    self.last_action is not None
-                    and i == self.last_action.move_end_row
-                    and j == self.last_action.move_end_col
-                ):
-                    if tile != EMPTY_TILE:
-                        short_string = (
-                            tile.short_string().replace("(", "{").replace(")", "}")
-                        )
-                    else:
-                        short_string = "LASTT"
-                else:
-                    short_string = tile.short_string()
+            for tile in row:
+                short_string = tile.short_string()
 
                 tiles_to_print.append(short_string)
 
@@ -124,7 +85,7 @@ class Board:
         print("\n".join(rows))
 
     @classmethod
-    def from_pretty_string(cls, pretty_string: str, last_action: Action | None) -> Self:
+    def from_pretty_string(cls, pretty_string: str) -> Self:
         rows = pretty_string.splitlines()
         tiles = []
 
@@ -132,13 +93,10 @@ class Board:
             tiles.append([])
             row = row.strip()
             for tile_string in row.split(" "):
-                if tile_string == "LLAST":
-                    tile = Tile(animal=Animal.EMPTY, color=Color.EMPTY)
-                else:
-                    tile = Tile.from_short_string(tile_string)
+                tile = Tile.from_short_string(tile_string)
                 tiles[-1].append(tile)
 
-        return Board(tiles=tiles, last_action=last_action)
+        return cls(tiles=tiles)
 
     def is_empty(self) -> bool:
         return all(tile == EMPTY_TILE for row in self.tiles for tile in row)

@@ -1,5 +1,6 @@
 import random
 from dataclasses import dataclass, field
+
 from rich import print
 
 from aiqualin.classes.action import Action
@@ -62,14 +63,14 @@ class Game:
             try:
                 new_tile = self.get_new_tile()
             except Exception:
-                print('\n[red]Error:[/red] Invalid input, try again!')
-                
+                print("\n[red]Error:[/red] Invalid input, try again!")
+
                 continue
             try:
                 index_in_closed_tiles = self.closed_tiles.index(new_tile)
             except ValueError:
                 # tile is not in closed tiles
-                print('\n[red]Error:[/red] Tile is not in closed tiles, try again!')
+                print("\n[red]Error:[/red] Tile is not in closed tiles, try again!")
             else:
                 self.open_tiles.append(self.closed_tiles.pop(index_in_closed_tiles))
 
@@ -93,10 +94,17 @@ class Game:
                 action = player.next_action(
                     self.board, self.open_tiles, self.closed_tiles
                 )
-                print("Action:", action)
+                # print("Action:", action)
                 self.play_action(action)
                 print()
                 self.board.visualize()
+                print()
+                print(
+                    f"Animal score: {GameScorer(self.board).score_for_property(Animal)}"
+                )
+                print(
+                    f"Color score: {GameScorer(self.board).score_for_property(Color)}"
+                )
                 print()
 
         score_animals = GameScorer(self.board).score_for_property(Animal)
